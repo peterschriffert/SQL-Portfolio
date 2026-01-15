@@ -59,13 +59,17 @@ Select distinct pizzatypes from #temptypes
 insert into Pizza (Pizzaname, Price, PizzaTypeId)
 Select Pizza, Price, Pizzatype.PizzaTypeId from pizzaimport
 join PizzaType on Pizzatype.PizzaTypeName=pizzaimport.Pizzatype
- 
-Select Pizzaid, value as ingredient into #tempingredients from pizzaimport
+
+with Parsedingredients as ( 
+Select Pizzaid, value as ingredientName from pizzaimport
 join Pizza p on p.Pizzaname=pizzaimport.Pizza
 cross apply string_split(ingredients, '/')
  
+)
+
 insert into Ingredient (IngredientName)
-Select distinct ingredient from #tempingredients
+Select distinct ingredientName from Parsedingredients
+where IngredientName not in (select IngredientName from Ingredient)
  
 insert into Receipt (PizzaId, Ingredientid)
 Select t.PizzaId, i.IngredientId from #tempingredients t
@@ -106,7 +110,7 @@ join Pizzatype pt on pt.PizzaTypeId=p.Pizzatypeid
 join Receipt r on r.PizzaId=p.PizzaId
 join Ingredient i on i.Ingredientid=r.Ingredientid
 group by Pizzaname, Price, PizzatypeName
-order by PizzatypeName asc
  )
 Select * from originaltable
 where Pricerank > 3
+order by PizzatypeName asc
