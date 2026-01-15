@@ -12,6 +12,7 @@ with metalsalesbase as (
   where g.Name like '%Metal%' and t.Composer is not null and i.BillingCountry not in ('USA', 'Canada')
 )
 
+
 Select 
 Case 
 when grouping(Salesyear)=1 then 'All Years'
@@ -23,7 +24,14 @@ when grouping(Salesyear)=1 then 'All Artists'
 when grouping(ArtistName)=1 then concat('All Artists in ', Salesyear)
 else ArtistName
 End as Artist_Name,
-cast(sum(Linetotal) as decimal (10,0)) as Totalrevenue 
+cast(sum(Linetotal) as decimal (10,0)) as Totalrevenue,
+---statistics for yearly change---
+case
+WHEN grouping(ArtistName) = 1 and grouping(SalesYear) = 0 then
+concat(cast(((sum(LineTotal) - lag(sum(LineTotal)) over (Partition by grouping(ArtistName) order by SalesYear)) / 
+nullif(lag(sum(LineTotal)) over (partition by grouping(ArtistName) order by SalesYear), 0)) * 100 as decimal(10,1)), '%')
+else 'n/a'
+end as YoY_Growth
 from metalsalesbase
 group by rollup(Salesyear, ArtistName)
 order by Salesyear
